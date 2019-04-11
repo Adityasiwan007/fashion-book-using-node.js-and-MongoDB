@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<title>W3.CSS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<head>
+    <style>
+      video::-webkit-media-controls-fullscreen-button {
+    display: none;
+      }
+      .price {
+  color: grey;
+  font-size: 22px;
+  align-self: center;
+}
+
+.card button {
+  border: none;
+  outline: 0;
+  padding: 12px;
+  color: white;
+  background-color: #000;
+  text-align: center;
+  cursor: pointer;
+  width: 100%;
+  font-size: 18px;
+}
+
+.card button:hover {
+  opacity: 0.7;
+}
+        #myDIV {
+          position: fixed;
+          width: 20%;
+          top: 50%;
+          left: 50%;
+          padding: 20px;
+          background-color: beige;
+          border-radius: 20px;
+          margin-top: 20px;
+          z-index:+3;
+          display: none;
+          -webkit-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+        }
+        </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/js/bootstrap.min.js"></script>
+</head> 
+<body>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script>
+    //let detail=[]
+    var status=false;
+    let p
+    let x=[]
+    var nfcs=[]; 
+    let products = {};
+    let videos = {}
+    let detail={}
+    let detail2={} // cumlative products of each video keyed with the video id
+    var lines=""
+    $.get(`/spotlight/video/links`, function(pro_time) 
+    { 
+     // document.write(`<p>${video_links[0]}</p>`)
+      pro_time.forEach(function(v){
+      lines +=(`
+      <div id=${v.vid_link} class="row" style="height=100%">
+        <div class="col-md-12" style="width: 100%;height:600px;">
+            <video style="width: 100%;"id=${v.vid_name} width=100%; height=100%; onplay="showMsg ('${v.vid_name}')" controls>
+            <source src=${v.vid_link} >
+            </video>
+
+            <div 
+              style="overflow-y:scroll;
+              max-width:20%;
+              padding:10px;
+              width:20%;
+              position:absolute; 
+              background: rgba(0, 0, 0, 0.3);
+              z-index:1; top:0; right:17px;height:100%;">
+              <span id="products_${v.vid_name}"></span>
+            </div>
+        </div> 
+        
+      </div><br><br><br><br>`);
+      })
+      document.getElementById("myText").innerHTML=lines;
+      
+    })  
+
+    
+    function showMsg(id) {
+      
+      var vid_id = document.getElementById(id);
+      $.get(`/spotlight/video/${id}`, function(vid){ 
+                videos[id] = vid
+                let nfcIDs = vid.play_location.map(timeslot=>timeslot.nfc)
+                //console.log(`requesting nfc ids ${nfcIDs}`)
+                loadProducts(nfcIDs)
+                //document.getElementById("value").innerHTML=vid.vid_name;
+              })
+
+       function loadProducts(productIDs){
+          $.get(`/spotlight/video/prodcuts/nfcids?nfc=${productIDs.join(",")}`, function(res) { 
+                //console.log(res)
+                products[id] = res.object
+                })   
+             } 
+             
+             setInterval(()=>{
+               // check video postion and load product ui
+               if(videos[id]){
+                 if(!detail[id]) detail[id] = []
+                 let nfcs=[]
+                  //detail=[]
+                  let videoMeta = videos[id]
+                  let time=vid_id.currentTime
+                  videoMeta.play_location.forEach(function(x){
+                      if(time>=x.start && time<=x.end)
+                      {
+                        nfcs.push(x.nfc)
+                      }
+                    }) 
+                    nfcs=Array.from(new Set(nfcs))
+                    nfcs.forEach(function(y){
+                      products[id].forEach(function(z){
+                        if(y==z.nfcCode)
+                        {
+                          detail[id].push(`<p onclick="pro_page('`+z.nfcCode+`')" style="color:aquamarine;font-size:18px; z-index=2;"><img src="`+z.images[0].url+`" alt="Forest" style="width:45px; height:50px;"> `+z.name+`</p>`)
+                        }
+                      })
+                    })
+                    
+               }
+               
+                 //console.log(`updating video ${id}`)
+                    //console.log(detail)
+                    detail[id]=Array.from(new Set(detail[id]))
+                    detail2[id]=detail[id].join(`<br>`);
+                    document.getElementById(`products_${id}`).innerHTML=detail2[id];
+             },1000)    
+        }
+        function pro_page(name)
+        {
+         let pop,product = null;
+         for(video_id of Object.keys(products)){
+            product = products[video_id].find(p=>p.nfcCode == name)
+            if(product) break
+         }
+         let des=product.description;
+         des=des.join(`<br>`);
+         console.log(product)
+         pop=`<h2 style="text-align:center">Product Card</h2>
+         <div class="card">
+            <span onclick="x_cross()" 
+        class="w3-button w3-display-topright">&times;</span>
+         <img src="`+product.images[0].url+`" alt="Denim Jeans" style="width:100%;">
+         <h1 style="text-align:center">`+product.name+`</h1>
+         <p style="text-align:center" class="price">`+product.price.value+` `+product.price.currencyIsoCode+`</p>
+         <p><b>Description:</b><br>Color: `+product.varient.color+`<br>`+des+`</p>
+         <p><b>Location:</b><br>Brand: `+product.brand+`<br>Section: `+product.inventory.section+`<br>Aisle: `+product.inventory.subsection+`</p>
+         <p><button>Add to Cart</button></p>
+         </div>`
+         //pop=`<img src="`+product.images[0].url+`" alt="Forest" style="width:100px; height:100px;"> <h2 style:"" >`+product.name+`</h2>`
+         document.getElementById(`myDIV`).innerHTML=pop;
+         document.getElementById("myDIV").style.display = "block";
+         document.getElementById("video_1").pause; 
+        }
+        function x_cross()
+        {
+          document.getElementById('myDIV').style.display='none';
+        }
+  </script>
+  <p id="myText" ></p>
+  <div  id="myDIV"  >
+  </div>
+  
+</body>
+</html>
+
+
