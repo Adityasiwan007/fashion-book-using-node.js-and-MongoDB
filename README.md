@@ -9,7 +9,7 @@ npm is a separate project from Node.js, and tends to update more frequently. As 
 npm install npm@latest -g
 
 # Now install Express in the myapp directory and save it in the dependencies list. For example:
-
+We are using Express framework
 $ npm install express --save
 
 # Setup for mongoDB:
